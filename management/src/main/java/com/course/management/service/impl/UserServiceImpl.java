@@ -134,18 +134,57 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public void addUser(User user) {
+        if (user == null || user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new RuntimeException("用户名不能为空");
+        }
+        if (userMapper.findByUsername(user.getUsername()) != null) {
+            throw new RuntimeException("用户名已存在");
+        }
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            user.setPassword("123456");
+        }
+        if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+            user.setRole("STUDENT");
+        }
+        if (user.getStatus() == null || user.getStatus().trim().isEmpty()) {
+            user.setStatus("ACTIVE");
+        }
+        userMapper.insert(user);
+    }
+
+    @Override
     public void updateUser(User user) {
-        userMapper.update(user);
+        if (user == null || user.getId() == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        User old = userMapper.findById(user.getId());
+        if (old == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            user.setUsername(old.getUsername());
+        }
+        if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+            user.setRole(old.getRole());
+        }
+        if (user.getStatus() == null || user.getStatus().trim().isEmpty()) {
+            user.setStatus(old.getStatus());
+        }
+        userMapper.updateFull(user);
     }
 
     @Override
     public void deleteUser(Long id) {
-        // 这里应该检查是否有依赖数据
         User user = userMapper.findById(id);
-        if (user != null) {
-            // 实际应该使用逻辑删除
-            throw new RuntimeException("用户删除需要处理关联数据");
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
         }
+        if ("ADMIN".equals(user.getRole())) {
+            throw new RuntimeException("管理员账号不能删除，可改为禁用普通账号");
+        }
+        userMapper.deactivate(id);
     }
 
     @Override

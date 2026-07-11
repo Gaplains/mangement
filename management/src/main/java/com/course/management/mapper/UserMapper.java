@@ -46,4 +46,15 @@ public interface UserMapper {
     List<Map<String, Object>> findUsers(@Param("keyword") String keyword,
                                         @Param("role") String role,
                                         @Param("status") String status);
+
+
+    @Select("SELECT COUNT(*) FROM users WHERE role = #{role}")
+    long countByRole(String role);
+
+
+    @Update("UPDATE users SET username=#{username}, role=#{role}, email=#{email}, phone=#{phone}, real_name=#{realName}, status=#{status} WHERE id=#{id}")
+    int updateFull(User user);
+
+    @Update("UPDATE users SET status='INACTIVE' WHERE id=#{id}")
+    int deactivate(Long id);
 }

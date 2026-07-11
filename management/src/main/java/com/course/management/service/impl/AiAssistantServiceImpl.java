@@ -2,103 +2,75 @@ package com.course.management.service.impl;
 
 import com.course.management.dto.AiRequestDTO;
 import com.course.management.dto.AiResponseDTO;
-import com.course.management.entity.Course;
-import com.course.management.mapper.CourseMapper;
+import com.course.management.entity.Book;
+import com.course.management.mapper.BookMapper;
 import com.course.management.service.AiAssistantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class AiAssistantServiceImpl implements AiAssistantService {
+    @Autowired private BookMapper bookMapper;
 
-    @Autowired
-    private CourseMapper courseMapper;
-
-    @Override
-    public AiResponseDTO answerCourseQuestion(AiRequestDTO request) {
-        String question = request == null ? "" : safe(request.getQuestion());
-        String normalized = question.toLowerCase(Locale.ROOT);
-        AiResponseDTO response = new AiResponseDTO();
-        response.setType("COURSE_QA_SIMULATED_AI");
-
-        if (normalized.contains("选课") || normalized.contains("报名") || normalized.contains("enroll")) {
-            response.setAnswer("选课流程：登录学生账号 → 进入课程中心 → 搜索课程 → 点击查看详情 → 确认可选后点击选课。系统会校验容量和重复选课。退课可在我的课程中操作。");
-        } else if (normalized.contains("成绩") || normalized.contains("分数") || normalized.contains("grade")) {
-            response.setAnswer("成绩由教师在成绩管理模块录入。学生可在成绩管理查看已发布成绩；如成绩为空，表示教师尚未录入或课程尚未结课。");
-        } else if (normalized.contains("管理员") || normalized.contains("权限") || normalized.contains("角色")) {
-            response.setAnswer("系统区分管理员、教师、学生三类角色。管理员管理用户和公告，教师发布课程、查看名单和录入成绩，学生浏览课程、选课退课和查看成绩。");
-        } else {
-            response.setAnswer("我可以回答选课流程、退课规则、成绩查询、课程容量、账号权限等问题。当前为本地规则 + 简单 NLP 模拟 AI，后续可替换为 OpenAI、通义千问或 Dify 知识库问答接口。");
-        }
-
-        response.setSuggestions(Arrays.asList("如何完成选课？", "教师如何录入成绩？", "管理员有哪些权限？"));
-        response.setRelatedCourses(findRelatedCourseNames(question));
-        return response;
+    @Override public AiResponseDTO answerLibraryQuestion(AiRequestDTO request) {
+        String q = request == null ? "" : safe(request.getQuestion());
+        String n = q.toLowerCase(Locale.ROOT);
+        AiResponseDTO r = new AiResponseDTO();
+        r.setType("LIBRARY_QA_SIMULATED_AI");
+        if (n.contains("借") || n.contains("borrow")) r.setAnswer("借阅流程：登录读者账号 → 检索图书 → 提交借阅申请 → 管理员审批 → 审批通过后形成借阅中记录，借期默认 30 天。");
+        else if (n.contains("还") || n.contains("return")) r.setAnswer("归还流程：在我的借阅中找到借阅中记录，联系管理员办理归还；管理员点击归还后系统自动恢复该书可借库存。");
+        else if (n.contains("逾期") || n.contains("到期")) r.setAnswer("系统保留到期日期，管理员可按到期日期筛选记录。演示版默认借期 30 天，可扩展为逾期自动提醒和罚金规则。");
+        else if (n.contains("管理员") || n.contains("权限")) r.setAnswer("管理员可维护图书、分类、读者和借阅审批；普通用户可搜索图书、提交借阅申请、查看个人借阅记录和使用智能推荐。");
+        else r.setAnswer("我是图书馆智能助手，可以回答借阅规则、归还流程、库存状态、分类检索和图书推荐问题。本模块为本地规则 + 简单 NLP 模拟 AI，可替换为大模型 API。 ");
+        r.setSuggestions(Arrays.asList("如何借阅一本书？","有没有人工智能入门书籍？","归还图书后库存如何变化？"));
+        r.setRelatedCourses(findRelatedBookNames(q));
+        return r;
     }
 
-    @Override
-    public AiResponseDTO recommendCourses(AiRequestDTO request) {
+    @Override public AiResponseDTO recommendBooks(AiRequestDTO request) {
         String keyword = request == null ? "" : safe(request.getKeyword());
-        List<String> related = findRelatedCourseNames(keyword);
-        AiResponseDTO response = new AiResponseDTO();
-        response.setType("COURSE_RECOMMENDATION_SIMULATED_AI");
-        response.setRelatedCourses(related);
-        if (related.isEmpty()) {
-            response.setAnswer("暂未找到完全匹配的课程。建议尝试输入 Java、数据库、Web、人工智能、数学等关键词，系统会根据课程名称和简介进行匹配推荐。");
-        } else {
-            response.setAnswer("根据你的兴趣关键词，推荐优先了解：" + String.join("、", related) + "。推荐依据为课程名称、课程简介与输入关键词的相关度。");
-        }
-        response.setSuggestions(Arrays.asList("输入：想学习后端开发", "输入：人工智能入门", "输入：提高数学基础"));
-        return response;
+        List<String> related = findRelatedBookNames(keyword);
+        AiResponseDTO r = new AiResponseDTO();
+        r.setType("BOOK_RECOMMENDATION_SIMULATED_AI");
+        r.setRelatedCourses(related);
+        r.setAnswer(related.isEmpty() ? "暂未找到完全匹配的图书。可尝试输入：人工智能、Java、Web、数据库、文学、历史等兴趣关键词。" : "根据你的兴趣关键词，推荐优先阅读：" + String.join("、", related) + "。推荐依据为书名、作者、分类和简介关键词匹配。");
+        r.setSuggestions(Arrays.asList("输入：人工智能入门","输入：适合 Web 开发初学者","输入：经典文学作品"));
+        return r;
     }
 
-    @Override
-    public AiResponseDTO generateCourseSummary(AiRequestDTO request) {
-        String courseName = request == null ? "" : safe(request.getCourseName());
-        String description = request == null ? "" : safe(request.getDescription());
-        AiResponseDTO response = new AiResponseDTO();
-        response.setType("COURSE_SUMMARY_SIMULATED_AI");
-        String title = StringUtils.hasText(courseName) ? courseName : "该课程";
-        String body = StringUtils.hasText(description) ? description : "课程暂无详细描述";
-        response.setAnswer(title + "适合希望系统学习相关知识并完成实践训练的同学。课程重点包括基础概念、核心方法、案例练习与项目应用。简介摘要：" + trim(body, 120));
-        response.setSuggestions(Arrays.asList("可用于课程详情页摘要", "可扩展为调用大模型生成教学大纲", "可继续加入自动标签推荐"));
-        response.setRelatedCourses(findRelatedCourseNames(courseName + " " + description));
-        return response;
+    @Override public AiResponseDTO generateBookSummary(AiRequestDTO request) {
+        String name = request == null ? "" : safe(request.getCourseName());
+        String desc = request == null ? "" : safe(request.getDescription());
+        AiResponseDTO r = new AiResponseDTO();
+        r.setType("BOOK_SUMMARY_SIMULATED_AI");
+        String title = StringUtils.hasText(name) ? name : "该图书";
+        r.setAnswer(title + "适合希望系统了解相关主题的读者。内容摘要：" + trim(StringUtils.hasText(desc) ? desc : "暂无详细简介，可由管理员补充作者、主题、适读人群和馆藏位置。", 140));
+        r.setSuggestions(Arrays.asList("可用于图书详情页简介优化","可扩展为调用大模型生成摘要","可继续加入自动标签推荐"));
+        r.setRelatedCourses(findRelatedBookNames(name + " " + desc));
+        return r;
     }
 
-    private List<String> findRelatedCourseNames(String keyword) {
-        List<Course> courses = courseMapper.findAll();
+    private List<String> findRelatedBookNames(String keyword) {
+        List<Book> books = bookMapper.search(null, null, "ON_SHELF");
         String key = safe(keyword).toLowerCase(Locale.ROOT);
-        if (!StringUtils.hasText(key)) {
-            return courses.stream().limit(5).map(Course::getCourseName).collect(Collectors.toList());
-        }
+        if (!StringUtils.hasText(key)) return books.stream().limit(5).map(Book::getTitle).collect(Collectors.toList());
         List<String> result = new ArrayList<>();
-        for (Course course : courses) {
-            String haystack = (safe(course.getCourseName()) + " " + safe(course.getDescription()) + " " + safe(course.getCourseCode())).toLowerCase(Locale.ROOT);
-            if (haystack.contains(key) || key.contains(safe(course.getCourseName()).toLowerCase(Locale.ROOT))) {
-                result.add(course.getCourseName());
-            }
+        for (Book b : books) {
+            String h = (safe(b.getTitle()) + " " + safe(b.getAuthor()) + " " + safe(b.getDescription()) + " " + safe(b.getCategoryName())).toLowerCase(Locale.ROOT);
+            if (h.contains(key) || key.contains(safe(b.getTitle()).toLowerCase(Locale.ROOT))) result.add(b.getTitle());
         }
-        if (result.isEmpty()) {
-            for (Course course : courses) {
-                String name = safe(course.getCourseName());
-                if ((key.contains("ai") || key.contains("智能")) && name.contains("智能")) result.add(name);
-                if ((key.contains("web") || key.contains("前端")) && name.contains("Web")) result.add(name);
-                if ((key.contains("java") || key.contains("后端")) && name.contains("Java")) result.add(name);
-                if ((key.contains("数据库") || key.contains("sql")) && name.contains("数据库")) result.add(name);
-                if ((key.contains("数学") || key.contains("基础")) && name.contains("数学")) result.add(name);
-            }
+        if (result.isEmpty()) for (Book b : books) {
+            String h = safe(b.getTitle()) + safe(b.getDescription()) + safe(b.getCategoryName());
+            if ((key.contains("ai") || key.contains("智能")) && h.contains("智能")) result.add(b.getTitle());
+            if ((key.contains("web") || key.contains("java")) && (h.contains("Web") || h.contains("Java"))) result.add(b.getTitle());
+            if (key.contains("数据库") && h.contains("数据库")) result.add(b.getTitle());
+            if ((key.contains("文学") || key.contains("小说")) && h.contains("文学")) result.add(b.getTitle());
         }
         return result.stream().distinct().limit(5).collect(Collectors.toList());
     }
-
-    private String safe(String value) { return value == null ? "" : value.trim(); }
-    private String trim(String value, int max) { return value.length() <= max ? value : value.substring(0, max) + "……"; }
+    private String safe(String v){ return v==null?"":v.trim(); }
+    private String trim(String v,int max){ return v.length()<=max?v:v.substring(0,max)+"……"; }
 }

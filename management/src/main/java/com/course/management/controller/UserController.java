@@ -37,7 +37,7 @@ public class UserController {
 
     @PostMapping("")
     public Result<Void> addUser(@RequestBody User user) {
-        userService.updateUser(user);
+        userService.addUser(user);
         return Result.success("添加成功", null);
     }
 
@@ -58,5 +58,11 @@ public class UserController {
     public Result<Void> changeStatus(@PathVariable Long id, @RequestParam String status) {
         userService.changeStatus(id, status);
         return Result.success("状态更新成功", null);
+    }
+
+    @PutMapping("/{id}/reset-password")
+    public Result<Void> resetPassword(@PathVariable Long id, @RequestParam(defaultValue = "123456") String password) {
+        userService.resetPassword(id, password);
+        return Result.success("密码重置成功", null);
     }
 }
