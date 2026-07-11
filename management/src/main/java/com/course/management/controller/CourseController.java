@@ -70,8 +70,12 @@ public class CourseController {
     @PutMapping("/{id}")
     public Result<Void> updateCourse(@PathVariable Long id, @RequestBody Course course) {
         course.setId(id);
-        // TODO: 实现课程更新逻辑
-        return Result.success("课程更新成功", null);
+        try {
+            courseService.updateCourse(course);
+            return Result.success("课程更新成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
