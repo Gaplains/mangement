@@ -51,6 +51,10 @@ SERVER_PORT=8081 ./mvnw spring-boot:run
 
 ## 常见启动问题
 
+### Public Key Retrieval is not allowed
+
+这是 MySQL 8 使用 `caching_sha2_password` 时常见的 JDBC 连接问题。项目的 JDBC URL 已加入 `allowPublicKeyRetrieval=true`，请在 IDEA 中重新构建项目，确保 `src/main/resources/application.yml` 被复制到 `target/classes/application.yml`。如果仍然报错，可执行 Maven 的 `clean` 后重新运行。
+
 ### Port 8080/8081 was already in use
 
 说明本机已有程序占用端口。处理方式任选一种：
@@ -58,6 +62,8 @@ SERVER_PORT=8081 ./mvnw spring-boot:run
 1. 关闭占用端口的进程；
 2. 在 IDEA 启动配置中加入 VM options：`-DSERVER_PORT=8082`；
 3. 或在系统环境变量中设置 `SERVER_PORT=8082` 后重新启动。
+
+如果日志仍显示 Tomcat started on port(s): 8080，说明 IDEA 还在使用旧的 `target/classes/application.yml`，请点击 Build → Rebuild Project，或执行 `mvn clean` 后重新运行。
 
 前端请求地址已改为 `window.location.origin + '/api'`，因此端口改成 8082 后直接访问 `http://localhost:8082/api/index.html` 即可，不需要再改前端代码。
 
