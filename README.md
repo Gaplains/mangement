@@ -39,14 +39,27 @@
 3. 确认 JDK 为 17。
 4. 确认 MySQL 已启动并已导入初始化 SQL。
 5. 运行 `com.course.management.ManagementApplication`。
-6. 浏览器访问：`http://localhost:8080/api/index.html`。
+6. 浏览器访问：`http://localhost:8081/api/index.html`。如果 8081 也被占用，可在 IDEA 启动配置的 VM options 中增加 `-DSERVER_PORT=8082`，或设置环境变量 `SERVER_PORT=8082`。
 
 也可以命令行启动：
 
 ```bash
 cd management
-./mvnw spring-boot:run
+SERVER_PORT=8081 ./mvnw spring-boot:run
 ```
+
+
+## 常见启动问题
+
+### Port 8080/8081 was already in use
+
+说明本机已有程序占用端口。处理方式任选一种：
+
+1. 关闭占用端口的进程；
+2. 在 IDEA 启动配置中加入 VM options：`-DSERVER_PORT=8082`；
+3. 或在系统环境变量中设置 `SERVER_PORT=8082` 后重新启动。
+
+前端请求地址已改为 `window.location.origin + '/api'`，因此端口改成 8082 后直接访问 `http://localhost:8082/api/index.html` 即可，不需要再改前端代码。
 
 ## 测试账号
 
