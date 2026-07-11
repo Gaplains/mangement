@@ -1,0 +1,30 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/course_management_platform?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    username: root
+    password: lc060703  # 改为你的MySQL密码
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.course.management.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.course.management: debug
