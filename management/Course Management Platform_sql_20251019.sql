@@ -260,7 +260,7 @@ INSERT INTO courses (course_code, course_name, credit, description, teacher_id, 
 ('CS014', '云计算技术', 3.0, '学习云计算平台和技术', 4, 40, '2023-2024-1'),
 ('MA015', '高等数学', 4.0, '微积分、线性代数等数学基础', 5, 60, '2023-2024-1');
 
-course_management_platform-- 插入选课数据 (200条)assignment_submissions
+-- 插入选课数据
 INSERT INTO course_selections (student_id, course_id, status) VALUES
 (1, 1, 'SELECTED'), (1, 2, 'SELECTED'), (1, 4, 'SELECTED'), (1, 15, 'SELECTED'),
 (2, 1, 'SELECTED'), (2, 3, 'SELECTED'), (2, 5, 'SELECTED'), (2, 15, 'SELECTED'),
@@ -430,4 +430,4 @@ SET current_students = (
     SELECT COUNT(*) 
     FROM course_selections cs 
     WHERE cs.course_id = c.id AND cs.status = 'SELECTED'
-);course_management_platform
+);

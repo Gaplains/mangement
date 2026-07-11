@@ -1727,6 +1727,47 @@
                     </div>
                 </div>
 
+
+                <!-- AI 智能助手页面 -->
+                <div v-if="activeMenu === 'aiAssistant'">
+                    <div class="content-header">
+                        <div>
+                            <h1 class="content-title">AI 智能学习助手</h1>
+                            <div class="content-subtitle">围绕课程推荐、选课问答和课程摘要的业务型 AI 模块（本地规则模拟，可扩展大模型 API）</div>
+                        </div>
+                    </div>
+                    <div class="content-card">
+                        <el-tabs v-model="aiActiveTab">
+                            <el-tab-pane label="智能问答" name="qa">
+                                <el-input type="textarea" rows="4" v-model="aiQuestion" placeholder="例如：如何完成选课？教师如何录入成绩？管理员有哪些权限？"></el-input>
+                                <el-button type="primary" style="margin-top: 12px;" :loading="aiLoading" @click="askAiQuestion">生成回答</el-button>
+                            </el-tab-pane>
+                            <el-tab-pane label="智能推荐" name="recommend">
+                                <el-input v-model="aiKeyword" placeholder="输入兴趣关键词，例如：人工智能入门、后端开发、数据库、数学基础"></el-input>
+                                <el-button type="success" style="margin-top: 12px;" :loading="aiLoading" @click="recommendAiCourses">推荐课程</el-button>
+                            </el-tab-pane>
+                            <el-tab-pane label="课程摘要" name="summary">
+                                <el-input v-model="aiCourseName" placeholder="课程名称"></el-input>
+                                <el-input type="textarea" rows="4" style="margin-top: 12px;" v-model="aiCourseDescription" placeholder="粘贴课程简介，AI 将生成适合展示的摘要"></el-input>
+                                <el-button type="warning" style="margin-top: 12px;" :loading="aiLoading" @click="generateAiSummary">生成摘要</el-button>
+                            </el-tab-pane>
+                        </el-tabs>
+                        <el-alert style="margin-top: 18px;" title="AI 模块说明" type="info" :closable="false" description="当前实现为本地规则 + 简单 NLP 模拟，输入、处理过程、输出结果清晰，可在 AiAssistantServiceImpl 中替换为 OpenAI、通义千问、Dify 或 Coze API。"></el-alert>
+                        <div v-if="aiResult.answer" style="margin-top: 18px;">
+                            <h3>输出结果</h3>
+                            <p style="line-height: 1.8; margin: 10px 0;">{{ aiResult.answer }}</p>
+                            <div v-if="aiResult.relatedCourses && aiResult.relatedCourses.length">
+                                <strong>相关课程：</strong>
+                                <el-tag v-for="course in aiResult.relatedCourses" :key="course" style="margin: 6px;">{{ course }}</el-tag>
+                            </div>
+                            <div v-if="aiResult.suggestions && aiResult.suggestions.length" style="margin-top: 10px;">
+                                <strong>可尝试提示词：</strong>
+                                <el-tag type="success" v-for="tip in aiResult.suggestions" :key="tip" style="margin: 6px;">{{ tip }}</el-tag>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 个人中心页面 -->
                 <div v-if="activeMenu === 'profile'">
                     <div class="content-header">
@@ -2465,6 +2506,15 @@
                 selectedTags: [],
                 reviewTags: ['内容丰富', '教师专业', '作业适量', '考核合理', '实用性强', '生动有趣', '难度适中', '互动性好'],
 
+                // AI 智能助手
+                aiActiveTab: 'qa',
+                aiQuestion: '',
+                aiKeyword: '',
+                aiCourseName: '',
+                aiCourseDescription: '',
+                aiLoading: false,
+                aiResult: {},
+
                 // 个人中心
                 profileActiveTab: 'basic',
                 profileForm: {
@@ -2754,7 +2804,8 @@
                 // 公共菜单
                 const commonMenu = [
                     { name: 'dashboard', title: '仪表板', icon: 'el-icon-s-data' },
-                    { name: 'profile', title: '个人中心', icon: 'el-icon-user' }
+                    { name: 'profile', title: '个人中心', icon: 'el-icon-user' },
+                    { name: 'aiAssistant', title: 'AI助手', icon: 'el-icon-magic-stick' }
                 ];
 
                 // 管理员菜单
@@ -2939,6 +2990,27 @@
                     }
                 });
             },
+
+            askAiQuestion() {
+                if (!this.aiQuestion) { this.$message.warning('请输入问题'); return; }
+                this.aiLoading = true;
+                axiosInstance.post('/ai/qa', { question: this.aiQuestion })
+                    .then(response => { this.aiLoading = false; this.aiResult = response.data || {}; })
+                    .catch(() => { this.aiLoading = false; this.$message.error('AI问答请求失败'); });
+            },
+            recommendAiCourses() {
+                if (!this.aiKeyword) { this.$message.warning('请输入兴趣关键词'); return; }
+                this.aiLoading = true;
+                axiosInstance.post('/ai/recommend', { keyword: this.aiKeyword, studentId: this.currentUser.id })
+                    .then(response => { this.aiLoading = false; this.aiResult = response.data || {}; })
+                    .catch(() => { this.aiLoading = false; this.$message.error('AI推荐请求失败'); });
+            },
+            generateAiSummary() {
+                this.aiLoading = true;
+                axiosInstance.post('/ai/summary', { courseName: this.aiCourseName, description: this.aiCourseDescription })
+                    .then(response => { this.aiLoading = false; this.aiResult = response.data || {}; })
+                    .catch(() => { this.aiLoading = false; this.$message.error('AI摘要请求失败'); });
+            },
 // 新增：辅助方法，加载初始数据
             loadInitialData() {
                 // 根据用户角色加载不同的数据
@@ -3050,6 +3122,9 @@
                     case 'courseReviews':
                         console.log('加载课程评价数据');
                         this.loadReviewData();
+                        break;
+                    case 'aiAssistant':
+                        console.log('打开AI智能助手');
                         break;
                     case 'profile':
                         console.log('加载个人资料数据');
