@@ -12,6 +12,7 @@ public interface UserService {
     void register(RegisterDTO registerDTO);
     User getUserInfo(Long userId);
     List<Map<String, Object>> getUsers(String keyword, String role, String status);
+    void addUser(User user);
     void updateUser(User user);
     void deleteUser(Long id);
     void changeStatus(Long id, String status);
